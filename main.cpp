@@ -381,8 +381,6 @@ int main()
             RenderThread(*params);
         });
 
-
-    // Render for 10 seconds
     std::cout << "Press any key to stop...";
     (void)getchar();
 
