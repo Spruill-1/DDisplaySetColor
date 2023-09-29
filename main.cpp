@@ -36,7 +36,7 @@ struct RenderParam
     winrt::DisplayPath path{ nullptr };
 };
 
-const int SurfaceCount = 2;
+const int SurfaceCount = 1;
 
 class D3D11Renderer
 {
@@ -153,12 +153,12 @@ void RenderThread(RenderParam& params)
     // Create a surface format description for the primaries
     winrt::DisplayPrimaryDescription primaryDesc{
         static_cast<uint32_t>(sourceResolution.Width), static_cast<uint32_t>(sourceResolution.Height),
-        params.path.SourcePixelFormat(), winrt::DirectXColorSpace::RgbFullG22NoneP709,
+        params.path.SourcePixelFormat(), winrt::DirectXColorSpace::RgbFullG10NoneP709,
         false,
         multisampleDesc };
 
-    std::array<winrt::DisplaySurface, SurfaceCount> primaries = { nullptr, nullptr };
-    std::array<winrt::DisplayScanout, SurfaceCount> scanouts = { nullptr, nullptr };
+    std::array<winrt::DisplaySurface, SurfaceCount> primaries = { nullptr };
+    std::array<winrt::DisplayScanout, SurfaceCount> scanouts = { nullptr };
 
     for (int surfaceIndex = 0; surfaceIndex < SurfaceCount; surfaceIndex++)
     {
@@ -326,7 +326,17 @@ int main()
     targetPath.Scaling(winrt::DisplayPathScaling::Identity);
 
     // We only look at BGRA 8888 modes in this example
-    targetPath.SourcePixelFormat(winrt::DirectXPixelFormat::B8G8R8A8UIntNormalized);
+    targetPath.SourcePixelFormat(winrt::DirectXPixelFormat::R16G16B16A16Float);
+
+    auto wireFormat = winrt::DisplayWireFormat::DisplayWireFormat(
+        winrt::DisplayWireFormatPixelEncoding::Rgb444,
+        10,
+        winrt::DisplayWireFormatColorSpace::BT2020,
+        winrt::DisplayWireFormatEotf::HdrSmpte2084,
+        winrt::DisplayWireFormatHdrMetadata::Hdr10
+    );
+
+    targetPath.WireFormat(wireFormat);
 
     // Get a list of modes for only the preferred resolution
     winrt::IVectorView<winrt::DisplayModeInfo> modes = targetPath.FindModes(winrt::DisplayModeQueryOptions::OnlyPreferredResolution);
@@ -376,12 +386,15 @@ int main()
     params->target = target;
     params->path = state.GetPathForTarget(target);
 
+    auto wireformat = params->path.WireFormat();
+
     std::thread renderThread([params = std::move(params)]()
         {
             RenderThread(*params);
         });
 
     std::cout << "Press any key to stop...";
+    (void)getchar();
     (void)getchar();
 
     // Trigger all render threads to terminate
