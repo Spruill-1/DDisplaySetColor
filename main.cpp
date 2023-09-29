@@ -238,8 +238,6 @@ int main()
         throw winrt::hresult_error();
     }
 
-    std::unique_ptr<MonitorUtilities::MonitorControl> monitorControl;
-
     auto displayManager = winrt::DisplayManager::Create(winrt::DisplayManagerOptions::None);
 
     std::cout << "Choose one of the monitors below:" << std::endl;
@@ -266,6 +264,8 @@ int main()
 
     auto target = targets[targetSelection-1];
 
+    std::unique_ptr<MonitorUtilities::MonitorControl> monitorControl;
+
     if (target.UsageKind() != winrt::DisplayMonitorUsageKind::SpecialPurpose)
     {
         monitorControl = std::make_unique<MonitorUtilities::MonitorControl>(
@@ -284,7 +284,8 @@ int main()
 
         if (!refreshedTarget)
         {
-            throw winrt::hresult_changed_state();
+            std::cerr << "Unable to find the target after refreshing.";
+            return -1;
         }
 
         target = refreshedTarget;
@@ -313,7 +314,7 @@ int main()
     if (result.ErrorCode() != winrt::DisplayManagerResult::Success)
     {
         std::cerr << "Unable to acquire target. Error " << result.ExtendedErrorCode();
-        throw winrt::hresult_error();
+        return -1;
     }
 
     targetState = result.State();
@@ -350,7 +351,7 @@ int main()
     {
         // Failed to find a mode
         std::cerr << "Failed to find a valid mode";
-        throw winrt::hresult_error();
+        return -1;
     }
 
     // Set the properties on the path
